@@ -85,7 +85,7 @@
                     responseDiv.textContent = 'Error: Recognition timeout.';
                     startButton.textContent = 'Start Listening';
                     startButton.disabled = false;
-                }, 10000); // 10 seconds timeout, adjust as needed
+                }, 10000); // 10 seconds timeout
             };
 
             recognition.onresult = (event) => {
@@ -127,7 +127,7 @@
             };
 
             recognition.start();
-        }, 10); // Adjust this delay according to your needs
+        }, 10);
     });
 </script>
 
