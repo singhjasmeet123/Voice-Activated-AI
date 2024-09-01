@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Voice Chatbot</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 20px;
+            text-align: center;
+        }
+
+        h1 {
+            color: #333;
+            font-size: 36px;
+            margin-bottom: 20px;
+        }
+
+        p {
+            color: #555;
+            font-size: 18px;
+            margin-bottom: 30px;
+        }
+
+        #startButton {
+            background-color: #4CAF50;
+            color: white;
+            padding: 15px 30px;
+            font-size: 20px;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            border-radius: 5px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            outline: none;
+        }
+
+        #startButton:hover {
+            background-color: #45a049;
+        }
+
+        #response {
+            margin-top: 40px;
+            font-size: 22px;
+            color: #333;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            background-color: #fff;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body>
+    <h1>Voice Chatbot</h1>
+    <p>Click the button, then speak to interact with the chatbot:</p>
+
+    <form id="voiceForm" method="POST">
+        <button type="button" id="startButton">Start Listening</button>
+        <p id="response"></p>
+    </form>
+
+    <script>
+    const startButton = document.getElementById('startButton');
+    const responseDiv = document.getElementById('response');
+    let recognition;
+
+    startButton.addEventListener('click', () => {
+        startButton.textContent = 'Starting Engine...'; // Display 'Starting Engine' message
+
+        setTimeout(() => {
+            startButton.textContent = 'Listening...';
+            startButton.disabled = true;
+
+            recognition = new webkitSpeechRecognition();
+            recognition.lang = 'en-US';
+
+            let recognitionTimeout;
+
+            recognition.onstart = () => {
+                recognitionTimeout = setTimeout(() => {
+                    recognition.abort(); // Stop recognition if it gets stuck
+                    console.error('Recognition timeout');
+                    responseDiv.textContent = 'Error: Recognition timeout.';
+                    startButton.textContent = 'Start Listening';
+                    startButton.disabled = false;
+                }, 10000); // 10 seconds timeout, adjust as needed
+            };
+
+            recognition.onresult = (event) => {
+                clearTimeout(recognitionTimeout); // Clear the timeout once results are received
+                const transcript = event.results[0][0].transcript;
+                console.log('Transcript:', transcript);
+
+                startButton.textContent = 'Processing...'; // When the transcript is received
+                fetch('/process_voice', {
+                    method: 'POST',
+                    body: JSON.stringify({ text: transcript }),
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => response.text())
+                .then(data => {
+                    console.log('Response:', data);
+                    responseDiv.textContent = 'Chatbot Response: ' + data;
+                    startButton.textContent = 'Start Listening';
+                    startButton.disabled = false;
+                    const speech = new SpeechSynthesisUtterance(data);
+                    window.speechSynthesis.speak(speech);
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    responseDiv.textContent = 'Error: Could not connect to the server.';
+                    startButton.textContent = 'Start Listening';
+                    startButton.disabled = false;
+                });
+            };
+
+            recognition.onerror = (event) => {
+                clearTimeout(recognitionTimeout); // Clear the timeout on error
+                console.error('Error:', event.error);
+                responseDiv.textContent = 'Error: Speech recognition failed.';
+                startButton.textContent = 'Start Listening';
+                startButton.disabled = false;
+            };
+
+            recognition.start();
+        }, 10); // Adjust this delay according to your needs
+    });
+</script>
+
+</body>
+</html>
